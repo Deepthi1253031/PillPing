@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Dashboard - PillPing V3</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<h1>💊 My Medicines</h1>
+<p>Welcome, <b id="userName"></b></p>
+
+<div class="card">
+  <h3>Medicine Add Cheyyi</h3>
+  <input id="medName" placeholder="Medicine Name - ex: Paracetamol">
+  <input id="medDose" placeholder="Dose - ex: 1 Tablet">
+  <input id="medTime" placeholder="Time - ex: 08:00 AM">
+  <button onclick="addMedicine()">Add Medicine</button>
+</div>
+
+<h3>Today List</h3>
+<div id="medList"></div>
+
+<button onclick="logout()" style="background:red; margin-top:20px;">Logout</button>
+
+<script>
+  document.getElementById('userName').innerText = localStorage.getItem('username') || 'User';
+
+  // Token lekapothe login ki pampu
+  if (!localStorage.getItem('token')) {
+    window.location.href = 'index.html';
+  }
+
+  async function addMedicine() {
+    const name = document.getElementById('medName').value;
+    const dose = document.getElementById('medDose').value;
+    const time = document.getElementById('medTime').value;
+    if (!name || !time) return alert('Name + Time ivvu');
+
+    await fetch('/api/medicines', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, dose, time })
+    });
+    alert('Medicine Added!');
+    loadMedicines();
+  }
+
+  async function loadMedicines() {
+    const res = await fetch('/api/medicines');
+    const meds = await res.json();
+    const list = document.getElementById('medList');
+    list.innerHTML = '';
+    meds.forEach(m => {
+      list.innerHTML += `
+        <div class="card">
+          <b>${m.name}</b> - ${m.dose} <br>
+          Time: ${m.time} | Status: <b>${m.status}</b> <br><br>
+          <button onclick="updateStatus('${m._id}', 'Taken')">✅ Taken</button>
+          <button onclick="updateStatus('${m._id}', 'Snoozed')" style="background:orange;">⏰ Snooze</button>
+        </div>`;
+    });
+  }
+
+  async function updateStatus(id, status) {
+    await fetch('/api/medicines/' + id, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status })
+    });
+    loadMedicines();
+  }
+
+  function logout() {
+    localStorage.clear();
+    window.location.href = 'index.html';
+  }
+
+  loadMedicines();
+</script>
+</body>
+</html>
